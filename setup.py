@@ -24,8 +24,7 @@ setup(
     zip_safe=True,
     python_requires='>=3.6',
     setup_requires=['setuptools_scm', 'setuptools>=38.6.0', 'wheel>=0.31.0', 'twine>=1.11.0'],  # md description support
-    install_requires=['numpy', 'h5py', 'matplotlib', 'rowan', 'sympy', 'simpleeval', 'scipy', 'jupyter',
-                      'pyopencl==2016.1'],
+    install_requires=['numpy', 'h5py', 'matplotlib', 'rowan', 'sympy', 'simpleeval', 'scipy', 'jupyter'],
     classifiers=[
         # complete classifier list: http://pypi.python.org/pypi?%3Aaction=list_classifiers
         'Development Status :: 2 - Pre-Alpha',

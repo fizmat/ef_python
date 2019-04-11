@@ -5,5 +5,9 @@ rowan
 sympy<1.3
 simpleeval
 scipy
-jupyter
+jupyter_core
 pandas
+pyopencl
+pytest
+pytest-mock
+tox

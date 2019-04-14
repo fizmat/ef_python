@@ -81,6 +81,19 @@ EF is not available in pypi yet, install from github:
 pip install 'git+https://github.com/epicf/ef_python.git'
 ```
 
+### pyopencl on Windows
+
+install miniconda-4.5.11 https://repo.anaconda.com/miniconda/
+
+in 4.5.12 the ssl library bug prevents downloading any packages (no 4.5.13 released as of now)
+
+Install opencl drivers (avoid Intel CPU-only if you have GPUs, as it can mask them from opencl, unless you're OK with that)
+
+Install pyopencl with cl12 bindings, unless 2.1 is supported by your driverss
+
+
+
+
 ## Run
 
 Start simulation defined by my_config.conf:

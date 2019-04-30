@@ -76,9 +76,9 @@ virtualenv --python=python3 ef_venv
 . ef_venv/bin/activate
 ```
 
-Or a conda environment:
+Or a conda environment (in Windows make sure to use Anaconda Prompt of Anaconda Powershell Prompt:
 ```sh
-TODO 
+conda create -n ef 
 conda activate ef
 ```
 
@@ -89,17 +89,27 @@ pip install 'git+https://github.com/epicf/ef_python.git'
 
 ### pyopencl on Windows
 
-Install miniconda-4.5.11 from https://repo.anaconda.com/miniconda/ (in 4.5.12 there is some problem ssl library bug that prevents downloading any packages)
+1. Install [miniconda]
 
-Install opencl drivers
-- nvidia: just use the latest GPU driver
-- intel integrated graphics: https://software.intel.com/en-us/articles/opencl-drivers
-- avoid Intel CPU-only, as it can hide both Intel and discrete GPU drivers from opencl
+2. Install opencl driver (runtime)
+    - NVidia: just use the latest GPU driver, they all support opencl 1.2
+    - Intel CPU with integrated graphics: just use the latest GPU driver
+        - it can run opencl on both CPU and integrated graphics
+        - [intel CPU-only runtime] is for the rare case of an Intel CPU with no integrated GPU
+    - Other: see https://wiki.tiker.net/CudaVsOpenCL#Vendors 
 
-Install pyopencl with cl12 bindings, unless 2.1 is supported by your driverss
+3. Check that opencl drivers are availible with [clinfo].
 
+4. Install pyopencl into the conda environment built with OpenCL 1.2:
+```sh
+conda create -n ef 
+conda activate ef
+conda install -c talley pyopencl==2017.2+cl12
+```
 
-
+[miniconda]: https://docs.conda.io/en/latest/miniconda.html
+[intel CPU-only runtime]: https://docs.conda.io/en/latest/miniconda.html#cpu-section
+[clinfo]: https://github.com/Oblomov/clinfo
 
 ## Run
 

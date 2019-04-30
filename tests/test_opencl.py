@@ -106,5 +106,5 @@ def test_opencl():
     assert_array_equal(part, [[0, 0, 0]])
     assert_array_equal(probe, [[1, 0, 0]])
     assert_array_equal(charge, [5])
-    assert_array_almost_equal(e.get(), [[5, 0, 0]])
-    assert_array_almost_equal(e_c, [[5, 0, 0]])
+    assert_array_almost_equal(e.get(), [[5, inf, inf]])
+    assert_array_almost_equal(e_c, [[5, inf, inf]])

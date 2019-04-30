@@ -76,6 +76,12 @@ virtualenv --python=python3 ef_venv
 . ef_venv/bin/activate
 ```
 
+Or a conda environment:
+```sh
+TODO 
+conda activate ef
+```
+
 EF is not available in pypi yet, install from github:
 ```sh
 pip install 'git+https://github.com/epicf/ef_python.git'
@@ -83,11 +89,12 @@ pip install 'git+https://github.com/epicf/ef_python.git'
 
 ### pyopencl on Windows
 
-install miniconda-4.5.11 https://repo.anaconda.com/miniconda/
+Install miniconda-4.5.11 from https://repo.anaconda.com/miniconda/ (in 4.5.12 there is some problem ssl library bug that prevents downloading any packages)
 
-in 4.5.12 the ssl library bug prevents downloading any packages (no 4.5.13 released as of now)
-
-Install opencl drivers (avoid Intel CPU-only if you have GPUs, as it can mask them from opencl, unless you're OK with that)
+Install opencl drivers
+- nvidia: just use the latest GPU driver
+- intel integrated graphics: https://software.intel.com/en-us/articles/opencl-drivers
+- avoid Intel CPU-only, as it can hide both Intel and discrete GPU drivers from opencl
 
 Install pyopencl with cl12 bindings, unless 2.1 is supported by your driverss
 

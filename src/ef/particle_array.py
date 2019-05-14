@@ -51,12 +51,12 @@ class ParticleArray(SerializableH5):
             m = point[0].shape[1]
         except IndexError:
             m = 1
-        if (m > 1):
+        if m > 1:
             point = np.asarray(points).astype(np.float32)
             e = pycl_array.to_device(queue, np.zeros((3, 3)).astype(np.float32))
         part = pycl_array.to_device(queue, np.asarray(self.positions).astype(np.float32))
         probe = pycl_array.to_device(queue, point)
-        if (part.shape[0] > 1):
+        if part.shape[0] > 1:
             charge = pycl_array.to_device(queue, np.array([self.charge, self.charge]).astype(np.float32))
         else:
             charge = pycl_array.to_device(queue, np.array(self.charge).astype(np.float32))
@@ -75,7 +75,7 @@ class ParticleArray(SerializableH5):
         }""").build()  # Create the OpenCL program
         program.calc_field(queue, probe.shape, None, part.data, probe.data, charge.data, e.data, np.int32(3),
                            np.int32(part.shape[0]))
-        return e.get();
+        return e.get()
 
     def boris_update_momentums(self, dt, total_el_field, total_mgn_field):
         self.momentums = boris_update_momentums(self.charge, self.mass, self.momentums, dt, total_el_field,

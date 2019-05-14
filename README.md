@@ -76,13 +76,13 @@ virtualenv --python=python3 ef_venv
 . ef_venv/bin/activate
 ```
 
-Or a conda environment (in Windows make sure to use Anaconda Prompt of Anaconda Powershell Prompt:
+Or a conda environment (on Windows use Anaconda Prompt of Anaconda Powershell Prompt:
 ```sh
 conda create -n ef 
 conda activate ef
 ```
 
-EF is not available in pypi yet, install from github:
+EF is not available in pypi or conda yet, install from github:
 ```sh
 pip install 'git+https://github.com/epicf/ef_python.git'
 ```

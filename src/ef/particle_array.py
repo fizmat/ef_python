@@ -45,36 +45,28 @@ class ParticleArray(SerializableH5):
     def field_at_points(self, points):
         context = cl.create_some_context()  # Initialize the Context
         queue = cl.CommandQueue(context)  # Instantiate a Queue
-        point = np.asarray([points]).astype(np.float32)
-        e = pycl_array.to_device(queue, np.zeros(3).astype(np.float32))
-        try:
-            m = point[0].shape[1]
-        except IndexError:
-            m = 1
-        if m > 1:
-            point = np.asarray(points).astype(np.float32)
-            e = pycl_array.to_device(queue, np.zeros((3, 3)).astype(np.float32))
-        part = pycl_array.to_device(queue, np.asarray(self.positions).astype(np.float32))
+        point = np.asarray(points).reshape(-1, 3).astype(np.float32)
+        n = self.positions.shape[0]
+        m = point.shape[0]
+        e = pycl_array.to_device(queue, np.zeros_like(point, np.float32))
+        part = pycl_array.to_device(queue, self.positions.astype(np.float32))
         probe = pycl_array.to_device(queue, point)
-        if part.shape[0] > 1:
-            charge = pycl_array.to_device(queue, np.array([self.charge, self.charge]).astype(np.float32))
-        else:
-            charge = pycl_array.to_device(queue, np.array(self.charge).astype(np.float32))
+        charge = pycl_array.to_device(queue, np.full(n, self.charge, np.float32))
         program = cl.Program(context, """
-        __kernel void calc_field(__global const float *part, __global const float *probe, __global const float *charge, __global float *e, const int thr, const int n)
+        __kernel void calc_field(__global const float *part, __global const float *probe, __global const float *charge,
+                                 __global float *e, const int thr, const int n)
         {
           int j = get_global_id(1);
           int i = get_global_id(0);
           for(int k = 0; k<n; k++){
-            float denom = sqrt((probe[i*thr] - part[k*thr])*(probe[i*thr] - part[k*thr]) + (probe[i*thr + 1] - part[k*thr + 1])*(probe[i*thr + 1] - part[k*thr + 1]) + (probe[i*thr + 2] - part[k*thr + 2])*(probe[i*thr + 2] - part[k*thr + 2]));
+            float denom = sqrt((probe[i*thr] - part[k*thr])*(probe[i*thr] - part[k*thr]) + 
+                               (probe[i*thr + 1] - part[k*thr + 1])*(probe[i*thr + 1] - part[k*thr + 1]) + 
+                               (probe[i*thr + 2] - part[k*thr + 2])*(probe[i*thr + 2] - part[k*thr + 2]));
             float denom_new = pow(denom, 3);
-          e[i*thr + j] += charge[k]*(probe[i*thr + j] - part[k*thr + j])/denom_new;
-        }       
-                  //float k_0 = pow(10.0,9.0);
-                  //float k = 9*k_0;  
+            e[i*thr + j] += charge[k]*(probe[i*thr + j] - part[k*thr + j])/denom_new;
+          }       
         }""").build()  # Create the OpenCL program
-        program.calc_field(queue, probe.shape, None, part.data, probe.data, charge.data, e.data, np.int32(3),
-                           np.int32(part.shape[0]))
+        program.calc_field(queue, probe.shape, None, part.data, probe.data, charge.data, e.data, np.int32(3), np.int32(n))
         return e.get()
 
     def boris_update_momentums(self, dt, total_el_field, total_mgn_field):

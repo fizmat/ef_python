@@ -8,7 +8,8 @@ import pytest
 from ef.config.config import Config
 from ef.main import main
 
-_examples_conf = [("examples/minimal_working_example/minimal_conf.conf", ()),
+_examples_conf = [("examples/conducting_sphere_potential/conducting_sphere_potential.conf", pytest.mark.slowish),
+                  ("examples/minimal_working_example/minimal_conf.conf", ()),
                   ("examples/single_particle_in_free_space/single_particle_in_free_space.conf", pytest.mark.slowish),
                   ("examples/single_particle_in_radial_electric_field/single_particle_in_radial_electric_field.conf",
                    ()),
@@ -52,6 +53,11 @@ def run_jupyter(dir, fname, path=None, copy_dir=False):
 @pytest.mark.jupyter
 def test_all_examples_visualize():
     run_jupyter("examples/jupyter", "visualize_examples.ipynb", 'examples/jupyter/')
+
+
+@pytest.mark.jupyter
+def test_conducting_sphere_potential(tmpdir):
+    run_jupyter("examples/conducting_sphere_potential", "sphere-potential.ipynb", tmpdir.join('newdir'), True)
 
 
 @pytest.mark.slow

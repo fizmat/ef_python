@@ -1,7 +1,7 @@
 from ef import particle_source
 
 __all__ = ["ParticleSourceConf", "ParticleSourceBoxSection", "ParticleSourceCylinderSection",
-           "ParticleSourceTubeSection"]
+           "ParticleSourceTubeSection", "ParticleSourceTubeAlongZSection"]
 
 from collections import namedtuple
 
@@ -48,7 +48,8 @@ class ParticleSourceConf(ConfigComponent):
             shape_args = list(self.shape.start) + list(self.shape.end) + [self.shape.radius]
             cls = ParticleSourceCylinderSection
         elif type(self.shape) is Tube:
-            shape_args = list(self.shape.start) + list(self.shape.end) + [self.shape.inner_radius, self.shape.outer_radius]
+            shape_args = list(self.shape.start) + list(self.shape.end) + [self.shape.inner_radius,
+                                                                          self.shape.outer_radius]
             cls = ParticleSourceTubeSection
         else:
             raise TypeError(f"Shape {type(self.shape)} of particle source not supported by config")
@@ -109,3 +110,25 @@ class ParticleSourceTubeSection(NamedConfigSection):
     def make(self):
         tube = Tube(self.content[:3], self.content[3:6], self.content.tube_inner_radius, self.content.tube_outer_radius)
         return ParticleSourceConf._from_content(self.name, tube, self.content)
+
+
+class ParticleSourceTubeAlongZSection(NamedConfigSection):
+    section = "ParticleSourceTubeAlongZ"
+    ContentTuple = namedtuple("ParticleSourceTubeAlongZTuple", ('tube_along_z_axis_x', 'tube_along_z_axis_y',
+                                                                'tube_along_z_axis_start_z',
+                                                                'tube_along_z_axis_end_z',
+                                                                'tube_along_z_inner_radius',
+                                                                'tube_along_z_outer_radius',
+                                                                'initial_number_of_particles',
+                                                                'particles_to_generate_each_step',
+                                                                'mean_momentum_x', 'mean_momentum_y', 'mean_momentum_z',
+                                                                'temperature', 'charge', 'mass'))
+    convert = ContentTuple(*([float] * 6 + [int] * 2 + [float] * 6))
+
+    def make(self):
+        tube = Tube(self.content[:3], (self.content.tube_along_z_axis_x,
+                                       self.content.tube_along_z_axis_y,
+                                       self.content.tube_along_z_axis_end_z),
+                    self.content.tube_along_z_inner_radius, self.content.tube_along_z_outer_radius)
+        return ParticleSourceConf._from_content(self.name, tube, self.content)
+

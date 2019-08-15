@@ -15,8 +15,10 @@ class ArrayOnGridCupy(ArrayOnGrid):
         self._interpolate_field = cupy.RawKernel(r'''
         extern "C" __global__
         void interpolate_field(int size, const double* field, const double* coords, double* result) {{
-            int tid = blockDim.x * blockIdx.x + threadIdx.x;
-            if (tid < size) {{
+            for (int tid = blockIdx.x * blockDim.x + threadIdx.x; 
+                tid < size; 
+                tid += blockDim.x * gridDim.x) 
+            {{
                 double x = coords[3 * tid]/{c[0]};
                 double y = coords[3 * tid + 1]/{c[1]};
                 double z = coords[3 * tid + 2]/{c[2]};
@@ -82,8 +84,9 @@ class ArrayOnGridCupy(ArrayOnGrid):
     def interpolate_at_positions(self, positions):
         result = self.xp.empty((positions.shape[0], *self.value_shape))
         n = positions.shape[0]
-        block = 128
-        grid = (n - 1) // block + 1
+        mp = cupy.cuda.Device().attributes['MultiProcessorCount']
+        block = 256
+        grid = 32*mp
         self._interpolate_field((grid,), (block,), (n, self._data, positions, result))
         return result
 

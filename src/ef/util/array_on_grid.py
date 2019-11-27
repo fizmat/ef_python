@@ -53,6 +53,14 @@ class ArrayOnGrid(SerializableH5):
     @property
     def zero(self):
         return self.xp.zeros(self.n_nodes, self.xp.float)
+    
+    def shape( self, weight):
+        if (weight) < 0.5:
+            return self.xp.stack((0.5 * (0.5 - weight) ** 2, 0.75 - weight ** 2, 0.5 * (0.5 + weight) ** 2, 0), -1)
+        elif (weight) == 0.5:
+            return self.xp.stack((0, 0.5 * (weight - 0.5) ** 2, 0.5 * (weight - 0.5) ** 2, 0), -1)
+        else:
+            return self.xp.stack((0, 0.5 * (1.5 - weight) ** 2, 0.75 - (1 - weight) ** 2, 0.5 * (weight - 0.5) ** 2), -1)  
 
     def reset(self):
         self._data = self.zero
@@ -70,12 +78,16 @@ class ArrayOnGrid(SerializableH5):
         nodes, remainders = self.xp.divmod(pos, self.cell)  # (np, 3)
         nodes = nodes.astype(int)  # (np, 3)
         weights = remainders / self.cell  # (np, 3)
-        wx = self.xp.stack((weights[:, 0], 1. - weights[:, 0]), -1).reshape((-1, 2, 1, 1))  # np * 2 * 1 * 1
-        wy = self.xp.stack((weights[:, 1], 1. - weights[:, 1]), -1).reshape((-1, 1, 2, 1))  # np * 1 * 2 * 1
-        wz = self.xp.stack((weights[:, 2], 1. - weights[:, 2]), -1).reshape((-1, 1, 1, 2))  # np * 1 * 1 * 2
+        wx = self.shape(weights[:, 0][0]).reshape((-1, 4, 1, 1))
+        wy = self.shape(weights[:, 1][0]).reshape((-1, 1, 4, 1))
+        wz = self.shape(weights[:, 2][0]).reshape((-1, 1, 1, 4))
+        #wx = self.xp.stack((weights[:, 0], 1. - weights[:, 0]), -1).reshape((-1, 2, 1, 1))  # np * 2 * 1 * 1
+        #wy = self.xp.stack((weights[:, 1], 1. - weights[:, 1]), -1).reshape((-1, 1, 2, 1))  # np * 1 * 2 * 1
+        #wz = self.xp.stack((weights[:, 2], 1. - weights[:, 2]), -1).reshape((-1, 1, 1, 2))  # np * 1 * 1 * 2
         w = (wx * wy * wz).reshape((-1))  # np*8
-        dn = self.xp.array([[[(1, 1, 1), (1, 1, 0)], [(1, 0, 1), (1, 0, 0)]],
-                            [[(0, 1, 1), (0, 1, 0)], [(0, 0, 1), (0, 0, 0)]]]).reshape((8, 3))  # 8 * 3
+        dn = self.xp.flip(self.xp.moveaxis(self.xp.mgrid[-1:3, -1:3, -1:3], 0, -1).reshape(64, 3), 0)
+        #dn = self.xp.array([[[(1, 1, 1), (1, 1, 0)], [(1, 0, 1), (1, 0, 0)]],
+         #                   [[(0, 1, 1), (0, 1, 0)], [(0, 0, 1), (0, 0, 0)]]]).reshape((8, 3))  # 8 * 3
         nodes_to_update = (nodes[:, self.xp.newaxis] + dn).reshape((-1, 3))  # (np*8, 3)
         self.scatter_add(self._data, tuple(nodes_to_update.transpose()), w * density)
 

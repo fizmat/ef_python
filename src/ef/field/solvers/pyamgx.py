@@ -33,7 +33,7 @@ class FieldSolverPyamgx(FieldSolver):
             }}
         }}"""
         self.cfg.create(conf_string)
-        self.resources = pyamgx.Resources().create_simple(self.cfg)
+        self.resources = pyamgx.Resources().create(self.cfg, None, 1, numpy.zeros(1, numpy.int32))
         self._rhs = pyamgx.Vector().create(self.resources)
         self._phi_vec = pyamgx.Vector().create(self.resources).upload(self.phi_vec)
         self._matrix = pyamgx.Matrix().create(self.resources).upload_CSR(self.A.tocsr())

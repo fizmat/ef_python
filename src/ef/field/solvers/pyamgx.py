@@ -2,7 +2,6 @@ import numpy
 
 from ef.field.solvers import FieldSolver
 
-
 class FieldSolverPyamgx(FieldSolver):
     def __del__(self):
         import pyamgx
@@ -13,10 +12,13 @@ class FieldSolverPyamgx(FieldSolver):
         self.resources.destroy()
         self.cfg.destroy()
         pyamgx.finalize()
+        self.comm.Disconnect()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        import sys
         import pyamgx
+        from mpi4py import MPI
         pyamgx.initialize()
         self.cfg = pyamgx.Config()
         conf_string = f"""{{
@@ -30,13 +32,24 @@ class FieldSolverPyamgx(FieldSolver):
                 "print_solve_stats": 0,
                 "obtain_timings": 0,
                 "print_grid_stats": 0
-            }}
+            }},
+            "communicator": "MPI"
         }}"""
+        # self.comm = MPI.COMM_SELF.Spawn(sys.executable, 'field/solvers/mpi/mpi_amgx.py', maxprocs=1)
+        self.comm = MPI.COMM_SELF.Clone()
+        # self.comm.send(conf_string, dest=0, tag=11)
+        # self.comm.Disconnect()
         self.cfg.create(conf_string)
-        self.resources = pyamgx.Resources().create(self.cfg, None, 1, numpy.zeros(1, numpy.int32))
-        self._rhs = pyamgx.Vector().create(self.resources)
-        self._phi_vec = pyamgx.Vector().create(self.resources).upload(self.phi_vec)
-        self._matrix = pyamgx.Matrix().create(self.resources).upload_CSR(self.A.tocsr())
+        self.resources = pyamgx.Resources().create(self.cfg, self.comm, 1, numpy.zeros(1, numpy.int32))
+        self._matrix = pyamgx.Matrix().create(self.resources)\
+            .comm_from_maps(1, 1, 0, numpy.zeros(1, dtype=numpy.int32),
+                            numpy.array([0], dtype=numpy.int32),
+                            numpy.zeros(1, dtype=numpy.int32),
+                            numpy.array([0], dtype=numpy.int32),
+                            numpy.zeros(1, dtype=numpy.int32))\
+            .upload_CSR(self.A.tocsr())
+        self._rhs = pyamgx.Vector().create(self.resources).bind(self._matrix)
+        self._phi_vec = pyamgx.Vector().create(self.resources).bind(self._matrix).upload(self.phi_vec)
         self._solver = pyamgx.Solver().create(self.resources, self.cfg)
         self._solver.setup(self._matrix)
 

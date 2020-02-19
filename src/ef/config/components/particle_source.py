@@ -3,13 +3,13 @@ import inject
 from ef import particle_source
 
 __all__ = ["ParticleSourceConf", "ParticleSourceBoxSection", "ParticleSourceCylinderSection",
-           "ParticleSourceTubeSection"]
+           "ParticleSourceTubeSection","ParticleSourceConeAlongZSection"]
 
 from collections import namedtuple
 
 import numpy as np
 
-from ef.config.components.shapes import Box, Cylinder, Tube
+from ef.config.components.shapes import Box, Cylinder, Tube, Cone
 from ef.config.section import NamedConfigSection
 from ef.config.component import ConfigComponent
 
@@ -53,6 +53,9 @@ class ParticleSourceConf(ConfigComponent):
         elif type(self.shape) is Tube:
             shape_args = list(self.shape.start) + list(self.shape.end) + [self.shape.inner_radius, self.shape.outer_radius]
             cls = ParticleSourceTubeSection
+        elif type(self.shape) is Cone:
+            shape_args = list(self.shape.start) + list(self.shape.start_radii) + list(self.shape.end_radii)
+            cls = ParticleSourceConeAlongZSection
         else:
             raise TypeError(f"Shape {type(self.shape)} of particle source not supported by config")
         return cls(self.name, *(shape_args + [self.initial_particles, self.particles_to_generate_each_step] +
@@ -112,3 +115,26 @@ class ParticleSourceTubeSection(NamedConfigSection):
     def make(self):
         tube = Tube(self.content[:3], self.content[3:6], self.content.tube_inner_radius, self.content.tube_outer_radius)
         return ParticleSourceConf._from_content(self.name, tube, self.content)
+
+class ParticleSourceConeAlongZSection(NamedConfigSection):
+    section = "ParticleSourceConeAlongZ"
+    ContentTuple = namedtuple("ParticleSourceConeAlongZTuple", ('cone_axis_x', 'cone_axis_y',
+                                                                'cone_axis_start_z', 'cone_axis_end_z',
+                                                                'cone_start_inner_radius', 'cone_start_outer_radius',
+                                                                'cone_end_inner_radius', 'cone_end_outer_radius',
+                                                                'initial_number_of_particles',
+                                                                'particles_to_generate_each_step',
+                                                                'mean_momentum_x', 'mean_momentum_y', 'mean_momentum_z',
+                                                                'temperature', 'charge', 'mass'))
+    convert = ContentTuple(*([float] * 8 + [int] * 2 + [float] * 6))
+
+    def make(self):
+        cone = Cone((self.content.cone_axis_x,
+                     self.content.cone_axis_y,
+                     self.content.cone_axis_start_z,
+                     self.content.cone_axis_end_z),
+                    (self.content.cone_start_inner_radius,
+                     self.content.cone_start_outer_radius),
+                    (self.content.cone_end_inner_radius,
+                     self.content.cone_end_outer_radius))
+        return ParticleSourceConf._from_content(self.name, cone, self.content)

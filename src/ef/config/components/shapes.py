@@ -278,4 +278,44 @@ class Cone(Shape):
         visualizer.draw_cone(self.start, self.end,
                              self.start_radii, self.end_radii, **kwargs)
 
+    def point_cone(self, x,y,z , r_start, r_end):
+        z_len = abs(self.start[2]-self.start[3])
+        x_dist = x - self.start[0]
+        y_dist = y - self.start[1]
+        flag = True
+        if (z < self.start[2]):
+            flag = False
+        if (z > self.start[3]):
+            flag = False
+        if ( r_start < r_end ):
+            tg_a = ( r_end - r_start ) / z_len
+            z_dist = abs( z - self.start[2] )
+            r = z_dist * tg_a + r_start
+        else:
+            tg_a = ( r_start - r_end ) / z_len
+            z_dist = abs( z - self.start[3])
+            r = z_dist * tg_a + r_end
+        if ( r * r < x_dist * x_dist + y_dist * y_dist):
+            flag = False
+        return flag
+
+    def are_positions_inside(self, positions):
+        flag_array = []
+        positions = self.xp.asarray(positions)
+        for i in positions:
+            flag = True
+            flag_outer = self.point_cone( i[0],i[1],i[2], self.start_radii[1],self.end_radii[1])
+            if not(flag_outer):
+                flag = False
+            flag_inner = self.point_cone( i[0],i[1],i[2], self.start_radii[0],self.end_radii[0])
+            if (flag_inner):
+                flag = False
+            flag_array.append(flag)
+        return flag_array
+
+    def generate_uniform_random_posititons(self, random_state, n):
+        pass
+
+    def export_h5(self, g, region):
+        pass
 # TODO: def are_positions_inside(self, point)

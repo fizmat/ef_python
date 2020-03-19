@@ -95,10 +95,10 @@ class TestFields:
 
     def test_binary(self, backend):
         f = FieldParticles('f', [ParticleArray(1, -1, 1, [(1, 2, 3)], [(-2, 2, 0)], False)])
-        ParticleArray.xp.testing.assert_array_almost_equal(f.get_at_points((1, 2, 3), 0), [(0, 0, 0)])
-        ParticleArray.xp.testing.assert_array_almost_equal(f.get_at_points((1, 2, 4), 0), [(0, 0, -1)])
-        ParticleArray.xp.testing.assert_array_almost_equal(f.get_at_points((0, 2, 3), 0), [(1, 0, 0)])
-        ParticleArray.xp.testing.assert_array_almost_equal(f.get_at_points((0, 1, 2), 0),
+        ParticleArray.xp.testing.assert_array_almost_equal(f.get_at_points([(1, 2, 3)], 0), [(0, 0, 0)])
+        ParticleArray.xp.testing.assert_array_almost_equal(f.get_at_points([(1, 2, 4)], 0), [(0, 0, -1)])
+        ParticleArray.xp.testing.assert_array_almost_equal(f.get_at_points([(0, 2, 3)], 0), [(1, 0, 0)])
+        ParticleArray.xp.testing.assert_array_almost_equal(f.get_at_points([(0, 1, 2)], 0),
                                                            [(1 / sqrt(27), 1 / sqrt(27), 1 / sqrt(27))])
         f = FieldParticles('f', [ParticleArray(2, -1, 1, [(1, 2, 3), (1, 2, 3)], [(-2, 2, 0), (0, 0, 0)], False),
                                  ParticleArray(2, -1, 1, [(1, 2, 3), (1, 2, 3)], [(-2, 2, 0), (0, 0, 0)], False)])

@@ -10,6 +10,7 @@ import h5py
 
 from ef.config.components import OutputFileConf
 from ef.config.config import Config
+from ef.field.particles import FieldParticles
 from ef.output.reader import Reader
 from ef.runner import Runner
 from ef.util.inject import configure_application
@@ -26,11 +27,13 @@ def main():
                         choices=["amg", "amgx"])
     parser.add_argument("--backend", default="numpy", help="select acceleration library",
                         choices=["numpy", "cupy"])
-
+    parser.add_argument("--gpus", nargs="+", default=[0], type=int,
+                        help="select GPUs to be used for binary field acceleration")
     args = parser.parse_args()
 
     is_config, parser_or_h5_filename = args.config_or_h5_file
     configure_application(args.solver, args.backend)
+    FieldParticles.gpu_list = args.gpus
     if is_config:
         conf = read_conf(parser_or_h5_filename, args.prefix, args.suffix, args.output_format)
         sim = conf.make()

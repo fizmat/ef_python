@@ -29,11 +29,14 @@ def main():
                         choices=["numpy", "cupy"])
     parser.add_argument("--gpus", nargs="+", default=[0], type=int,
                         help="select GPUs to be used for binary field acceleration")
+    parser.add_argument("--binary-field-batches", default=1, type=int,
+                        help="batches to split binary field computations into to fit in GPU memory")
     args = parser.parse_args()
 
     is_config, parser_or_h5_filename = args.config_or_h5_file
     configure_application(args.solver, args.backend)
     FieldParticles.gpu_list = args.gpus
+    FieldParticles.batches = args.binary_field_batches
     if is_config:
         conf = read_conf(parser_or_h5_filename, args.prefix, args.suffix, args.output_format)
         sim = conf.make()

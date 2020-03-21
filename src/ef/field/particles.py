@@ -13,7 +13,7 @@ class FieldParticles(Field):
     def __init__(self, name, particle_arrays):
         super().__init__(name, electric_or_magnetic='electric')
         self.particle_arrays: List[ParticleArray] = particle_arrays
-        self._field_at_points = cp.RawKernel(r'''
+        self._field_at_points = [cp.RawKernel(r'''
         extern "C" __global__
         void field_at_points(int n_points, int n_particles, const double* points, const double* particles, double* forces) {
             int tid = blockDim.x * blockIdx.x + threadIdx.x;
@@ -30,15 +30,15 @@ class FieldParticles(Field):
                 }
             }
         }
-        ''', 'field_at_points')
+        ''', 'field_at_points') for _ in range(len(self.gpu_list))]
 
-    def field_at_points(self, p: ParticleArray, points):
+    def field_at_points(self, p: ParticleArray, points, i):
         forces = cp.zeros(points.size)
         points = cp.asanyarray(points)
         n = points.shape[0]
         block = 128
         grid = (n - 1) // block + 1
-        self._field_at_points((grid,), (block,), (n, p.positions.shape[0], points.ravel(order='C'), cp.asanyarray(p.positions).ravel(order='C'), forces))
+        self._field_at_points[i]((grid,), (block,), (n, p.positions.shape[0], points.ravel(order='C'), cp.asanyarray(p.positions).ravel(order='C'), forces))
         forces = forces.reshape(points.shape)
         return p.charge * forces
 
@@ -47,6 +47,6 @@ class FieldParticles(Field):
         for i, pair in enumerate(zip(self.gpu_list, cp.array_split(cp.asarray(positions), len(self.gpu_list)))):
             gpu_id, pos = pair
             with cp.cuda.Device(gpu_id):
-                field[i] = sum(cp.nan_to_num(self.field_at_points(p, pos)) for p in self.particle_arrays)
+                field[i] = sum(cp.nan_to_num(self.field_at_points(p, pos, i)) for p in self.particle_arrays)
         field = cp.concatenate([cp.asarray(f) for f in field])
         return field if hasattr(positions, 'get') else field.get()

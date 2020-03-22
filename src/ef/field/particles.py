@@ -15,7 +15,7 @@ class FieldParticles(Field):
         self.particle_arrays: List[ParticleArray] = particle_arrays
         self._field_at_points = [cp.RawKernel(r'''
         extern "C" __global__
-        void field_at_points(int n_points, int n_particles, const double* points, const double* particles, double* forces) {
+        void field_at_points(const int n_points, const int n_particles, const double charge, const double* points, const double* particles, double* forces) {
             int tid = blockDim.x * blockIdx.x + threadIdx.x;
             if (tid < n_points) {
                 int po = tid;
@@ -24,9 +24,9 @@ class FieldParticles(Field):
                     dx = points[3*po] - particles[3*pa];
                     dy = points[3*po+1] - particles[3*pa+1];
                     dz = points[3*po+2] - particles[3*pa+2];
-                    forces[3*po] += dx * pow(dx*dx + dy*dy + dz*dz, -1.5);
-                    forces[3*po+1] += dy * pow(dx*dx + dy*dy + dz*dz, -1.5);
-                    forces[3*po+2] += dz * pow(dx*dx + dy*dy + dz*dz, -1.5);
+                    forces[3*po] += charge * dx  * pow(dx*dx + dy*dy + dz*dz, -1.5);
+                    forces[3*po+1] += charge * dy * pow(dx*dx + dy*dy + dz*dz, -1.5);
+                    forces[3*po+2] += charge * dz * pow(dx*dx + dy*dy + dz*dz, -1.5);
                 }
             }
         }
@@ -38,15 +38,19 @@ class FieldParticles(Field):
         n = points.shape[0]
         block = 128
         grid = (n - 1) // block + 1
-        self._field_at_points[i]((grid,), (block,), (n, p.positions.shape[0], points.ravel(order='C'), cp.asanyarray(p.positions).ravel(order='C'), forces))
-        forces = forces.reshape(points.shape)
+        self._field_at_points[i]((grid,), (block,), (n, p.positions.shape[0], p.charge, points.ravel(order='C'), cp.asanyarray(p.positions).ravel(order='C'), forces))
         return p.charge * forces
 
     def get_at_points(self, positions, time):
-        field = list(range(len(self.gpu_list)))
-        for i, pair in enumerate(zip(self.gpu_list, cp.array_split(cp.asarray(positions), len(self.gpu_list)))):
-            gpu_id, pos = pair
+        n_gpu = len(self.gpu_list)
+        positions_slices = cp.array_split(cp.asarray(positions), n_gpu)
+        index = zip(range(n_gpu), self.gpu_list, positions_slices)
+        field = list(range(n_gpu))
+        for i, gpu_id, pos in index:
             with cp.cuda.Device(gpu_id):
-                field[i] = sum(cp.nan_to_num(self.field_at_points(p, pos, i)) for p in self.particle_arrays)
+                field[i] = cp.zeros(pos.size)
+                for p in self.particle_arrays:
+                    field[i] = self.field_at_points(p, pos, i)
+                field[i] = field[i].reshape(pos.shape)
         field = cp.concatenate([cp.asarray(f) for f in field])
         return field if hasattr(positions, 'get') else field.get()

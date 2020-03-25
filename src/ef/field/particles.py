@@ -33,12 +33,20 @@ class FieldParticles(Field):
         ''', 'field_at_points') for _ in range(len(self.gpu_list))]
 
     def field_at_points(self, p: ParticleArray, points, i):
+        start = cp.cuda.Event()
+        stop = cp.cuda.Event()
         forces = cp.zeros(points.size)
         points = cp.asanyarray(points)
         n = points.shape[0]
         block = 128
         grid = (n - 1) // block + 1
-        self._field_at_points[i]((grid,), (block,), (n, p.positions.shape[0], p.charge, points.ravel(order='C'), cp.asanyarray(p.positions).ravel(order='C'), forces))
+        po = points.ravel(order='C')
+        pp = cp.asanyarray(p.positions).ravel(order='C')
+        start.record()
+        self._field_at_points[i]((grid,), (block,), (n, p.positions.shape[0], p.charge, po, pp, forces))
+        stop.record()
+        stop.synchronize()
+        print('\nGPU', cp.cuda.Device().id, ':', cp.cuda.get_elapsed_time(start, stop))
         return p.charge * forces
 
     def get_at_points(self, positions, time):
